@@ -19,7 +19,7 @@ Once you have an API that can describe itself in Swagger, you've opened the trea
 
 |Swashbuckle Version|ASP.NET Core|Swagger / OpenAPI Spec.|swagger-ui|ReDoc UI|
 |----------|----------|----------|----------|----------|
-|[master](https://github.com/domaindrivendev/Swashbuckle.AspNetCore/tree/master)|>=2.0.0|2.0, 3.0|3.19.5|2.0.0-rc.0|
+|[master](https://github.com/domaindrivendev/Swashbuckle.AspNetCore/tree/master)|>=2.0.0|2.0, 3.0|3.22.0|2.0.0-rc.4|
 |[5.0.0-beta](https://github.com/domaindrivendev/Swashbuckle.AspNetCore/tree/v5.0.0-beta)|>=2.0.0|2.0, 3.0|3.19.5|1.22.2|
 |[4.0.0](https://github.com/domaindrivendev/Swashbuckle.AspNetCore/tree/v4.0.0)|>=2.0.0|2.0|3.19.5|1.22.2|
 |[3.0.0](https://github.com/domaindrivendev/Swashbuckle.AspNetCore/tree/v3.0.0)|>=1.0.4|2.0|3.17.1|1.20.0|
@@ -1132,24 +1132,35 @@ _NOTE:_ This will add the above description specifically to the tag named "Produ
 
 The Swashbuckle CLI tool can retrieve Swagger JSON directly from your application startup assembly, and write it to file. This can be useful if you want to incorporate Swagger generation into a CI/CD process, or if you want to serve it from static file at run-time.
 
-The tool can be installed as a [per-project, framework-dependent CLI extension](https://docs.microsoft.com/en-us/dotnet/core/tools/extensibility#per-project-based-extensibility) by adding the following reference to your .csproj file and running `dotnet restore`:
+The tool can be installed as a [.NET Core Global Tools](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools) either locally or globally by creating a `dotnet-tools.json` file next to your .sln or .csproj file:
 
-```xml
-<ItemGroup>
-  <DotNetCliToolReference Include="Swashbuckle.AspNetCore.Cli" Version="2.1.0-beta1" />
-</ItemGroup>
+```json
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+  }
+}
 ```
+
+Then, to install tool locally, run the following command:
+
+```
+dotnet tool install swashbuckle.aspnetcore.cli
+```
+
+To restore the tool on a clean machine, run `dotnet tool restore`
 
 Once this is done, you should be able to run the following command from your project root:
 
 ```
-dotnet swagger tofile --help
+dotnet tool run swagger tofile --help
 ```
 
 Before you invoke the `tofile` command, you need to ensure your application is configured to expose Swagger JSON, as described in [Getting Started](#getting-started). Once this is done, you can point to your startup assembly and generate a local Swagger JSON file with the following command:
 
 ```
-dotnet swagger tofile --output [output] [startupassembly] [swaggerdoc]
+dotnet tool run swagger tofile --output [output] [startupassembly] [swaggerdoc]
 ```
 
 Where ...

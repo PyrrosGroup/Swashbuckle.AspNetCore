@@ -73,6 +73,9 @@ namespace Swashbuckle.AspNetCore.SwaggerGen.Test
         public void AcceptsOptionalParameter(string param = "foobar")
         { }
 
+        public void AcceptsOptionalJsonConvertedEnum(JsonConvertedEnum param = JsonConvertedEnum.Value1)
+        { }
+
         public void AcceptsStringFromRoute([FromRoute]string param)
         { }
 
@@ -94,6 +97,9 @@ namespace Swashbuckle.AspNetCore.SwaggerGen.Test
         public void AcceptsComplexTypeFromBody([FromBody]ComplexType param)
         { }
 
+        public void AcceptsComplexTypeFromBodyThatIsRequired([FromBody, Required]ComplexType param)
+        { }
+
         public void AcceptsComplexTypeFromForm([FromForm]ComplexType param)
         { }
 
@@ -101,26 +107,6 @@ namespace Swashbuckle.AspNetCore.SwaggerGen.Test
         { }
 
         public void AcceptsCancellationToken(CancellationToken cancellationToken)
-        { }
-
-        public void AcceptsXmlAnnotatedTypeFromQuery([FromQuery]XmlAnnotatedType param1)
-        {}
-
-        /// <summary>
-        /// summary for AnnotatedWithXml
-        /// </summary>
-        /// <remarks>
-        /// remarks for AnnotatedWithXml
-        /// </remarks>
-        /// <param name="param1">description for param1</param>
-        /// <param name="param2">description for param2</param>
-        /// <param name="param3">description for param3</param>
-        /// <response code="200">description for 200</response>
-        /// <response code="400">description for 400</response>
-        public void AnnotatedWithXml(
-            int param1,
-            IEnumerable<ComplexType> param2,
-            [FromQuery(Name = "Param-3")]string param3)
         { }
 
         [ProducesResponseType(typeof(void), 204)]

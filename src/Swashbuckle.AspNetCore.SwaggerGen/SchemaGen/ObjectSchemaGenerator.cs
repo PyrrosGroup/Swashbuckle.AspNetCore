@@ -13,8 +13,11 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
 {
     public class ObjectSchemaGenerator : ChainableSchemaGenerator
     {
-        public ObjectSchemaGenerator(SchemaGeneratorOptions options, ISchemaGenerator rootGenerator, IContractResolver contractResolver)
-            : base(options, rootGenerator, contractResolver)
+        public ObjectSchemaGenerator(
+            IContractResolver contractResolver,
+            ISchemaGenerator rootGenerator,
+            SchemaGeneratorOptions options)
+            : base(contractResolver, rootGenerator, options)
         { }
 
         protected override bool CanGenerateSchemaFor(Type type)
@@ -26,8 +29,8 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
         {
             var jsonObjectContract = (JsonObjectContract)ContractResolver.ResolveContract(type);
 
-            var requiredPropertyNames = new List<string>();
             var properties = new Dictionary<string, OpenApiSchema>();
+            var requiredPropertyNames = new List<string>();
 
             foreach (var jsonProperty in jsonObjectContract.Properties)
             {
@@ -39,10 +42,11 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
 
                 if (Options.IgnoreObsoleteProperties && attributes.OfType<ObsoleteAttribute>().Any()) continue;
 
+                properties.Add(jsonProperty.PropertyName, GeneratePropertySchema(jsonProperty, memberInfo, attributes, schemaRepository));
+
                 if (jsonProperty.Required == Required.AllowNull || jsonProperty.Required == Required.Always || attributes.OfType<RequiredAttribute>().Any())
                     requiredPropertyNames.Add(jsonProperty.PropertyName);
 
-                properties.Add(jsonProperty.PropertyName, GeneratePropertySchema(jsonProperty, attributes, schemaRepository));
             }
 
             var additionalProperties = (jsonObjectContract.ExtensionDataValueType != null)
@@ -61,7 +65,11 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
             return schema;
         }
 
-        private OpenApiSchema GeneratePropertySchema(JsonProperty jsonProperty, object[] attributes, SchemaRepository schemaRepository) 
+        private OpenApiSchema GeneratePropertySchema(
+            JsonProperty jsonProperty,
+            MemberInfo memberInfo,
+            object[] attributes,
+            SchemaRepository schemaRepository) 
         {
             var schema = RootGenerator.GenerateSchema(jsonProperty.PropertyType, schemaRepository);
 
@@ -72,7 +80,7 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
             {
                 if (attribute is DefaultValueAttribute defaultValue)
                 {
-                    schema.Default = OpenApiAnyFactory.TryCreateFrom(defaultValue.Value, out IOpenApiAny openApiAny)
+                    schema.Default = OpenApiAnyFactory.TryCreateFor(schema, defaultValue.Value, out IOpenApiAny openApiAny)
                         ? openApiAny
                         : schema.Default;
                 }
@@ -103,6 +111,18 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
                     schema.MinLength = stringLength.MinimumLength;
                     schema.MaxLength = stringLength.MaximumLength;
                 }
+                else if (attribute is EmailAddressAttribute)
+                {
+                    schema.Format = "email";
+                }
+                else if (attribute is CreditCardAttribute)
+                {
+                    schema.Format = "credit-card";
+                }
+                else if (attribute is PhoneAttribute)
+                {
+                    schema.Format = "tel";
+                }
                 else if (attribute is DataTypeAttribute dataTypeAttribute && schema.Type == "string")
                 {
                     schema.Format = DataTypeFormatMap.TryGetValue(dataTypeAttribute.DataType, out string format)
@@ -118,7 +138,19 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
         {
             { DataType.Date, "date" },
             { DataType.DateTime, "date-time" },
-            { DataType.Password, "password" }
+            { DataType.Time, "time" },
+            { DataType.Duration, "duration" },
+            { DataType.PhoneNumber, "tel" },
+            { DataType.Currency, "currency" },
+            { DataType.Text, "string" },
+            { DataType.Html, "html" },
+            { DataType.MultilineText, "multiline" },
+            { DataType.EmailAddress, "email" },
+            { DataType.Password, "password" },
+            { DataType.Url, "uri" },
+            { DataType.ImageUrl, "uri" },
+            { DataType.CreditCard, "credit-card" },
+            { DataType.PostalCode, "postal-code" },
         };
     }
 }

@@ -11,11 +11,14 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
 {
     public class PrimitiveSchemaGenerator : ChainableSchemaGenerator
     {
+        private readonly JsonSerializerSettings _serializerSettings;
+
         public PrimitiveSchemaGenerator(
-            SchemaGeneratorOptions options,
-            ISchemaGenerator rootGenerator,
             IContractResolver contractResolver,
-            JsonSerializerSettings serializerSettings) : base(options, rootGenerator, contractResolver)
+            ISchemaGenerator rootGenerator,
+            JsonSerializerSettings serializerSettings,
+            SchemaGeneratorOptions options)
+            : base(contractResolver, rootGenerator, options)
         {
             _serializerSettings = serializerSettings;
         }
@@ -38,14 +41,18 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
 
         private OpenApiSchema GenerateEnumSchema(JsonPrimitiveContract jsonPrimitiveContract)
         {
-            var stringEnumConverter = _serializerSettings.Converters.OfType<StringEnumConverter>().FirstOrDefault()
-                ?? (jsonPrimitiveContract.Converter as StringEnumConverter); 
+            var stringEnumConverter = (jsonPrimitiveContract.Converter as StringEnumConverter)
+                ?? _serializerSettings.Converters.OfType<StringEnumConverter>().FirstOrDefault();
 
             var describeAsString = Options.DescribeAllEnumsAsStrings
                 || (stringEnumConverter != null);
 
             var describeInCamelCase = Options.DescribeStringEnumsInCamelCase
+#if NETCOREAPP3_0
+                || (stringEnumConverter != null && stringEnumConverter.NamingStrategy is CamelCaseNamingStrategy);
+#else
                 || (stringEnumConverter != null && stringEnumConverter.CamelCaseText);
+#endif
 
             var enumType = jsonPrimitiveContract.UnderlyingType;
             var enumUnderlyingType = describeAsString ? typeof(string) : enumType.GetEnumUnderlyingType();
@@ -55,10 +62,11 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
             if (describeAsString)
             {
                 schema.Enum = enumType.GetEnumNames()
+                    .Distinct()
                     .Select(name =>
                     {
                         name = describeInCamelCase ? name.ToCamelCase() : name;
-                        return OpenApiAnyFactory.TryCreateFrom(name, out IOpenApiAny openApiAny) ? openApiAny : null;
+                        return (IOpenApiAny)(new OpenApiString(name));
                     })
                     .ToList();
             }
@@ -66,10 +74,11 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
             {
                 schema.Enum = enumType.GetEnumValues()
                     .Cast<object>()
+                    .Distinct()
                     .Select(value =>
                     {
                         value = Convert.ChangeType(value, enumUnderlyingType);
-                        return OpenApiAnyFactory.TryCreateFrom(value, out IOpenApiAny openApiAny) ? openApiAny : null;
+                        return OpenApiAnyFactory.TryCreateFor(schema, value, out IOpenApiAny openApiAny) ? openApiAny : null;
                     })
                     .ToList();
             }
@@ -97,8 +106,8 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
             { typeof(DateTime), () => new OpenApiSchema { Type = "string", Format = "date-time" } },
             { typeof(DateTimeOffset), () => new OpenApiSchema { Type = "string", Format = "date-time" } },
             { typeof(Guid), () => new OpenApiSchema { Type = "string", Format = "uuid" } },
-            { typeof(Uri), () => new OpenApiSchema { Type = "string" } }
+            { typeof(Uri), () => new OpenApiSchema { Type = "string", Format = "uri" } },
+            { typeof(TimeSpan), () => new OpenApiSchema { Type = "string", Format = "date-span" } },
         };
-        private readonly JsonSerializerSettings _serializerSettings;
     }
 }
