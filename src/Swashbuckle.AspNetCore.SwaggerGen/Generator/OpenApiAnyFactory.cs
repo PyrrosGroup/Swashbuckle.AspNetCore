@@ -13,9 +13,6 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
             if (schema.Type == "boolean" && TryCast(value, out bool boolValue))
                 openApiAny = new OpenApiBoolean(boolValue);
 
-            else if (schema.Type == "integer" && schema.Format == "int32" && TryCast(value, out short shortValue))
-                openApiAny = new OpenApiInteger(shortValue); // preliminary unboxing is required; simply casting to int won't suffice
-
             else if (schema.Type == "integer" && schema.Format == "int32" && TryCast(value, out int intValue))
                 openApiAny = new OpenApiInteger(intValue);
 
@@ -44,7 +41,7 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
         {
             try
             {
-                typedValue = (T)value;
+                typedValue = (T)Convert.ChangeType(value, typeof(T));
                 return true;
             }
             catch (InvalidCastException)

@@ -9,6 +9,8 @@ namespace Swashbuckle.AspNetCore.SwaggerGen.Test
     {
         [Theory]
         [InlineData("boolean", null, true, typeof(OpenApiBoolean))]
+        [InlineData("integer", "int32", (byte)10, typeof(OpenApiInteger))]
+        [InlineData("integer", "int32", ByteEnum.Value2, typeof(OpenApiInteger))]
         [InlineData("integer", "int32", (short)10, typeof(OpenApiInteger))]
         [InlineData("integer", "int32", ShortEnum.Value2, typeof(OpenApiInteger))]
         [InlineData("integer", "int32", 10, typeof(OpenApiInteger))]
@@ -41,6 +43,17 @@ namespace Swashbuckle.AspNetCore.SwaggerGen.Test
 
             Assert.NotNull(instance);
             Assert.IsType(typeof(OpenApiDate), instance);
+        }
+
+        [Fact]
+        public void TryCreateFor_CreatesAnInstance_ForDoubleSchemaAndValueWhenGivenDecimal()
+        {
+            var schema = new OpenApiSchema { Type = "number", Format = "double" };
+
+            OpenApiAnyFactory.TryCreateFor(schema, 3.4m, out IOpenApiAny instance);
+
+            Assert.NotNull(instance);
+            Assert.IsType(typeof(OpenApiDouble), instance);
         }
     }
 }
